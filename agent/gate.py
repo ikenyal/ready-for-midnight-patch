@@ -3,6 +3,7 @@
 The model never decides whether an action is allowed. This code does, from the real state of the sites.
 """
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -12,6 +13,10 @@ from . import sites
 ALLOWED_PHP = {"8.2", "8.3"}
 SNAPSHOT_MAX_AGE = 24 * 3600
 PLANS = Path(__file__).resolve().parent.parent / "plans"
+# Ablation switches for measuring what each layer contributes (never set them in real use):
+#   AYR_ABLATE=gate     the gate's checks always pass (L2 off)
+#   AYR_ABLATE=shaping  page checks also return the page text to the model (L4 off)
+ABLATE = set(filter(None, os.environ.get("AYR_ABLATE", "").split(",")))
 
 
 class Denied(Exception):
@@ -19,7 +24,7 @@ class Denied(Exception):
 
 
 def require(cond: bool, rule: str, why: str):
-    if not cond:
+    if not cond and "gate" not in ABLATE:
         raise Denied(f"DENIED ({rule}): {why}")
 
 
@@ -77,6 +82,8 @@ def check_dev_pages(paths) -> str:
         out.append({"path": path, "status": status,
                     "error": "php_fatal" if fatal else ("http_error" if status >= 400 else None),
                     "plugins_named_in_error": [s for s in slugs if fatal and s in text]})
+        if "shaping" in ABLATE:
+            out[-1]["text"] = text[:3000]
     return json.dumps({"env": "dev", "pages": out})
 
 
