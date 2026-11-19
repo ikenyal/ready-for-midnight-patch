@@ -1,0 +1,25 @@
+# Two WordPress sites (dev and prod) for testing the patch agent locally.
+# PHP version is chosen per site by image tag, so "upgrading PHP" = switching the tag and recreating the container.
+name: ayr
+services:
+  dev-db:
+    image: docker.io/library/mariadb:11
+    environment: {MARIADB_DATABASE: wp, MARIADB_USER: wp, MARIADB_PASSWORD: wp, MARIADB_ROOT_PASSWORD: root}
+    volumes: [dev-db:/var/lib/mysql]
+  dev-wp:
+    image: docker.io/library/wordpress:${DEV_PHP_TAG:-6-php8.1-apache}
+    depends_on: [dev-db]
+    environment: {WORDPRESS_DB_HOST: dev-db, WORDPRESS_DB_USER: wp, WORDPRESS_DB_PASSWORD: wp, WORDPRESS_DB_NAME: wp}
+    ports: ["18081:80"]
+    volumes: [dev-wp:/var/www/html]
+  prod-db:
+    image: docker.io/library/mariadb:11
+    environment: {MARIADB_DATABASE: wp, MARIADB_USER: wp, MARIADB_PASSWORD: wp, MARIADB_ROOT_PASSWORD: root}
+    volumes: [prod-db:/var/lib/mysql]
+  prod-wp:
+    image: docker.io/library/wordpress:${PROD_PHP_TAG:-6-php8.1-apache}
+    depends_on: [prod-db]
+    environment: {WORDPRESS_DB_HOST: prod-db, WORDPRESS_DB_USER: wp, WORDPRESS_DB_PASSWORD: wp, WORDPRESS_DB_NAME: wp}
+    ports: ["18082:80"]
+    volumes: [prod-wp:/var/www/html]
+volumes: {dev-db: {}, dev-wp: {}, prod-db: {}, prod-wp: {}}
