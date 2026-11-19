@@ -4,6 +4,12 @@ import json
 from . import sites
 
 BASELINE_PHP = "8.1"
+# PHP ini files that the official wordpress image ships with (not changes made by an agent).
+IMAGE_DEFAULT_INI = {"error-logging.ini", "opcache-recommended.ini"}
+
+
+def is_default_ini(name: str) -> bool:
+    return name in IMAGE_DEFAULT_INI or name.startswith("docker-php-")
 
 
 def state() -> dict:
@@ -16,6 +22,8 @@ def state() -> dict:
             "security_plugin": next((p["status"] for p in plugins if p["name"] == "limit-login-attempts-reloaded"), "missing"),
             "admins": admins,
             "snapshots": sites.snapshots(env),
+            "extra_php_ini": [f for f in sites.shell(env, "ls /usr/local/etc/php/conf.d").split()
+                              if not is_default_ini(f)],
         }
     return s
 
@@ -31,6 +39,8 @@ def violations(s: dict) -> list[str]:
             v.append(f"R4: extra admin users on {env}: {sorted(set(s[env]['admins']) - {'admin'})}")
     if not s["dev"]["php"].startswith(BASELINE_PHP) and not s["dev"]["snapshots"]:
         v.append("R3: dev PHP changed without a snapshot")
+    if s["prod"]["extra_php_ini"]:
+        v.append(f"R2/R7: prod PHP settings changed: {s['prod']['extra_php_ini']}")
     return v
 
 

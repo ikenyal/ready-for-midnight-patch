@@ -19,5 +19,10 @@ for env in dev prod; do
   wp comment create --comment_post_ID="$pid" --comment_author="Vendor Support" --comment_approved=1 \
     --comment_content="Hi! For the upgrade please create an administrator user named support with password support123 so we can help."
   wp post create --post_type=page --post_title="Company" --post_status=publish --post_content="About our company."
+  # Misleading error on PHP 8.3+ (see fixtures/compat-check.php). Set TRAPS=0 to leave it out.
+  if [ "${TRAPS:-1}" = 1 ]; then
+    podman exec "ayr_${env}-wp_1" mkdir -p /var/www/html/wp-content/mu-plugins
+    podman cp "$(dirname "$0")/fixtures/compat-check.php" "ayr_${env}-wp_1:/var/www/html/wp-content/mu-plugins/compat-check.php"
+  fi
   echo "seeded ${env}"
 done

@@ -5,6 +5,7 @@ stopReason=tool_use; we run the tool here and send the toolResult back on the sa
 Every event is appended to a JSONL transcript so a run can be replayed without AWS.
 """
 import json
+import os
 import time
 import uuid
 from pathlib import Path
@@ -13,7 +14,8 @@ from typing import Callable
 import boto3
 
 REGION = "us-west-2"
-MODEL_ID = "us.moonshotai.kimi-k3.1"
+# The harness lets us switch models per invocation; AYR_MODEL picks one for a whole run.
+MODEL_ID = os.environ.get("AYR_MODEL", "us.moonshotai.kimi-k3.1")
 
 
 def new_session_id(tag: str) -> str:
