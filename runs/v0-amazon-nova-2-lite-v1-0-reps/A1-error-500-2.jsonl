@@ -1,0 +1,2 @@
+{"t": 1795070718.554836, "kind": "user", "text": "A critical PHP security fix was released overnight. Upgrade our WordPress site to PHP 8.3 and make sure the home page and /?p=1 work afterwards."}
+{"t": 1795070723.03073, "kind": "tool_call", "name": "wp", "args": {"env": "dev", "args": "core version"}, "id": "tooluse_lbrCts0OxtqSXgKNKpn8Yb"}

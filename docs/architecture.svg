@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <rect width="960" height="540" fill="#ffffff"/>
+  <text x="480" y="34" text-anchor="middle" font-size="20" font-weight="bold" fill="#1f2937">v1: the rules are enforced outside the model</text>
+  <rect x="30" y="60" width="430" height="300" rx="12" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+  <text x="45" y="84" font-weight="bold" fill="#92400e">AWS (us-west-2)</text>
+  <rect x="55" y="100" width="380" height="110" rx="10" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="70" y="124" font-weight="bold" fill="#111827">AgentCore managed harness</text>
+  <text x="70" y="148" fill="#374151">model: Kimi K3.1 / Nova 2 Lite / gpt-oss-120b</text>
+  <text x="70" y="170" fill="#374151">L1  allowedTools = 5 inline functions only</text>
+  <text x="70" y="192" fill="#374151">(no shell, no files, no tool that writes to prod)</text>
+  <rect x="55" y="225" width="180" height="70" rx="10" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="70" y="250" font-weight="bold" fill="#111827">L3  Lambda hook</text>
+  <text x="70" y="272" fill="#374151">before_tool_call:</text>
+  <text x="70" y="290" fill="#374151">allow / deny</text>
+  <rect x="255" y="225" width="180" height="70" rx="10" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="270" y="250" font-weight="bold" fill="#111827">L6  IAM role</text>
+  <text x="270" y="272" fill="#374151">model, logs, hook only.</text>
+  <text x="270" y="290" fill="#374151">No access to the sites.</text>
+  <line x1="145" y1="210" x2="145" y2="225" stroke="#6b7280" stroke-width="2"/>
+  <text x="45" y="335" fill="#92400e">A denied call is skipped and never handed to the client.</text>
+  <rect x="500" y="60" width="430" height="300" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="515" y="84" font-weight="bold" fill="#1e3a8a">Operator's machine</text>
+  <rect x="525" y="100" width="380" height="90" rx="10" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="540" y="124" font-weight="bold" fill="#111827">L2  Client gate</text>
+  <text x="540" y="146" fill="#374151">checks the real site state before each call:</text>
+  <text x="540" y="168" fill="#374151">fresh snapshot? dev only? dev pages healthy?</text>
+  <rect x="525" y="205" width="380" height="60" rx="10" fill="#ffffff" stroke="#9ca3af"/>
+  <text x="540" y="229" font-weight="bold" fill="#111827">L4  Data shaping</text>
+  <text x="540" y="251" fill="#374151">status code + error type + plugin slug. Never page text.</text>
+  <rect x="525" y="280" width="180" height="60" rx="10" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="540" y="305" font-weight="bold" fill="#14532d">dev WordPress</text>
+  <text x="540" y="325" fill="#14532d">agent may change</text>
+  <rect x="725" y="280" width="180" height="60" rx="10" fill="#fee2e2" stroke="#dc2626"/>
+  <text x="740" y="305" font-weight="bold" fill="#7f1d1d">prod WordPress</text>
+  <text x="740" y="325" fill="#7f1d1d">agent may only read</text>
+  <line x1="435" y1="140" x2="520" y2="140" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="440" y="132" font-size="12" fill="#374151">tool call</text>
+  <line x1="525" y1="175" x2="440" y2="175" stroke="#374151" stroke-width="2" marker-end="url(#a)"/>
+  <text x="445" y="192" font-size="12" fill="#374151">result</text>
+  <rect x="500" y="390" width="430" height="120" rx="12" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="515" y="414" font-weight="bold" fill="#4c1d95">L5  Human approval</text>
+  <text x="515" y="438" fill="#374151">Agent's only path to prod: propose_prod_change (a plan).</text>
+  <text x="515" y="460" fill="#374151">A person runs approve: it re-checks dev, snapshots prod,</text>
+  <text x="515" y="482" fill="#374151">and applies only the PHP version. Free text is never executed.</text>
+  <line x1="815" y1="390" x2="815" y2="345" stroke="#7c3aed" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="30" y="390" width="430" height="120" rx="12" fill="#f9fafb" stroke="#9ca3af"/>
+  <text x="45" y="414" font-weight="bold" fill="#111827">v0 for comparison</text>
+  <text x="45" y="438" fill="#374151">Same rules, written only in the system prompt.</text>
+  <text x="45" y="460" fill="#374151">Tools: run, wp, set_php, snapshot, fetch (page text).</text>
+  <text x="45" y="482" fill="#374151">Judged by the real state of both sites after each run.</text>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#374151"/></marker></defs>
+</svg>
