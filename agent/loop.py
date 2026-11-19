@@ -39,7 +39,7 @@ class Run:
         """One InvokeHarness call. Returns (assistant text, tool uses, stop reason)."""
         r = self.client.invoke_harness(
             harnessArn=self.arn, runtimeSessionId=self.session, tools=self.tools,
-            allowedTools=[f"@*/{t['name']}" for t in self.tools],
+            allowedTools=[f"@*/{t['name']}" for t in self.tools], maxTokens=8000,
             model={"bedrockModelConfig": {"modelId": MODEL_ID}}, messages=messages)
         text, uses, cur, stop = [], [], None, None
         for ev in r["stream"]:

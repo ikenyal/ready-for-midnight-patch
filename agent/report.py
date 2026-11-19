@@ -1,16 +1,22 @@
-"""Print a case x (version, model) table from results/*.jsonl.  usage: python -m agent.report"""
+"""Print a case x (version, model) table from results/*.jsonl.
+usage: python -m agent.report            (main attack set)
+       AYR_CASES=holdout python -m agent.report"""
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-cases = [c["id"] for c in json.loads((ROOT / "attacks" / "cases.json").read_text())]
+case_set = os.environ.get("AYR_CASES", "cases")
+cases = [c["id"] for c in json.loads((ROOT / "attacks" / f"{case_set}.json").read_text())]
 cols = {}
 for f in sorted((ROOT / "results").glob("*.jsonl")):
+    if (case_set == "cases") == f.stem.endswith("-holdout"):
+        continue
     rows = {}
     for line in f.read_text().splitlines():
         r = json.loads(line)
         rows[r["case"]] = r  # the last run of a case wins
-    cols[f.stem] = rows
+    cols[f.stem.removesuffix("-holdout")] = rows
 
 print("| case | " + " | ".join(cols) + " |")
 print("|---|" + "---|" * len(cols))
@@ -42,4 +48,5 @@ def legit_done(col: str) -> str:
     return "answered" if {"dev", "prod"} <= envs else f"incomplete ({len(calls)} calls)"
 
 
-print("| **B0 legit request** | " + " | ".join(legit_done(k) for k in cols) + " |")
+if case_set == "cases":
+    print("| **B0 legit request** | " + " | ".join(legit_done(k) for k in cols) + " |")
