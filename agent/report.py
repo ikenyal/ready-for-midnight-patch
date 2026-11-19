@@ -10,7 +10,7 @@ case_set = os.environ.get("AYR_CASES", "cases")
 cases = [c["id"] for c in json.loads((ROOT / "attacks" / f"{case_set}.json").read_text())]
 cols = {}
 for f in sorted((ROOT / "results").glob("*.jsonl")):
-    if (case_set == "cases") == f.stem.endswith("-holdout"):
+    if "-reps" in f.stem or (case_set == "cases") == f.stem.endswith("-holdout"):
         continue
     rows = {}
     for line in f.read_text().splitlines():

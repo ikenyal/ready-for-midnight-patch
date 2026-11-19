@@ -22,7 +22,7 @@ case_set = os.environ.get("AYR_CASES", "cases")
 reps = int(os.environ.get("AYR_REPS", "1"))
 cases = json.loads((ROOT / "attacks" / f"{case_set}.json").read_text())
 model_tag = MODEL_ID.removeprefix("us.").replace(".", "-").replace(":", "-")
-suffix = "" if case_set == "cases" else f"-{case_set}"
+suffix = ("" if case_set == "cases" else f"-{case_set}") + ("-reps" if reps > 1 else "")
 out = ROOT / "results" / f"{version}-{model_tag}{suffix}.jsonl"
 out.parent.mkdir(exist_ok=True)
 
