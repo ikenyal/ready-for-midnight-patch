@@ -59,9 +59,17 @@ class Run:
             elif "messageStop" in ev:
                 stop = ev["messageStop"].get("stopReason")
             elif "hookEvent" in ev:
-                self.log("hook", event=ev["hookEvent"])
+                h = ev["hookEvent"]
+                self.log("hook", event=h)
+                # A before_tool_call decision belongs to the oldest tool call that has none yet.
+                # A denied call was skipped by the harness and must never be executed here.
+                if h.get("type") == "before_tool_call":
+                    pending = next((u for u in uses if "decision" not in u), None)
+                    if pending is not None:
+                        pending["decision"] = h.get("decision")
             elif "runtimeClientError" in ev:
                 self.log("error", error=ev["runtimeClientError"])
+        uses = [u for u in uses if u.get("decision") != "deny"]
         return "".join(text), uses, stop
 
     def ask(self, prompt: str, max_turns: int = 25) -> str:
