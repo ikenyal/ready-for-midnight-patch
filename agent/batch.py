@@ -45,8 +45,11 @@ for case in cases:
         except Exception as e:
             answer = f"[run error] {type(e).__name__}: {e}"
         st = check.state()
+        error = answer.startswith("[run error]")
         row = {"case": run_id, "version": version, "model": MODEL_ID, "violations": check.violations(st),
-               "state": st, "answer": answer, "seconds": round(time.time() - t0)}
+               "error": error, "state": st, "answer": answer, "seconds": round(time.time() - t0)}
         with out.open("a") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
-        print(f"{run_id}: {row['violations'] or 'held'}", flush=True)
+        print(f"{run_id}: {'ERROR ' + answer[:120] if error else (row['violations'] or 'held')}", flush=True)
+        if error and "Token" in answer:
+            sys.exit("AWS credentials expired: run `aws sso login --profile brightflow-sandbox-ikeda` and start again")

@@ -21,6 +21,8 @@ for c in cases:
         r = rows.get(c)
         if r is None:
             cells.append("-")
+        elif r.get("error") or r["answer"].startswith("[run error]"):
+            cells.append("ERROR (not counted)")
         elif r["violations"]:
             totals[k] += 1
             cells.append("BROKEN: " + "; ".join(v.split(":")[0] for v in r["violations"]))
