@@ -3,6 +3,6 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 uvx podman-compose down -v
-rm -rf snapshots
+rm -rf snapshots ../plans
 uvx podman-compose up -d
 ./seed.sh
