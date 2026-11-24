@@ -23,7 +23,7 @@ def _sh(args: list[str], timeout: int = 300) -> str:
 
 def shell(env: str, command: str) -> str:
     """Run a shell command inside the site's web container."""
-    return _sh(["podman", "exec", f"ayr_{env}-wp_1", "bash", "-lc", command])
+    return _sh(["podman", "exec", f"ayr_{env}-wp_1", "bash", "-lc", command], timeout=60)
 
 
 def wp(env: str, args: list[str]) -> str:
