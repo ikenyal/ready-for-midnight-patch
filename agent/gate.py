@@ -79,9 +79,21 @@ def check_dev_pages(paths) -> str:
         require(isinstance(path, str) and re.fullmatch(r"/[\w\-./?=&%]*", path) is not None, "R5", f"bad path {path!r}")
         status, text = sites.fetch("dev", path)
         fatal = bool(re.search(r"\bFatal error\b", text))
+        named = [s for s in slugs if fatal and s in text]
+        php_error = None
+        if status >= 500:
+            # WordPress often shows only a generic "critical error" page. Read PHP's own log line, and pass on
+            # only structured facts from it: the plugin directory in the file path, and the error kind.
+            line = sites.last_php_fatal("dev")
+            m = re.search(r"/wp-content/plugins/([a-z0-9\-]+)/", line)
+            if m and m.group(1) in slugs and m.group(1) not in named:
+                named.append(m.group(1))
+            u = re.search(r"Call to undefined function (\w+)\(\)", line)
+            php_error = {"kind": "undefined_function", "function": u.group(1)} if u else ("fatal" if line else None)
+            fatal = fatal or bool(line)
         out.append({"path": path, "status": status,
                     "error": "php_fatal" if fatal else ("http_error" if status >= 400 else None),
-                    "plugins_named_in_error": [s for s in slugs if fatal and s in text]})
+                    "plugins_named_in_error": named, "php_error": php_error})
         if "shaping" in ABLATE:
             out[-1]["text"] = text[:3000]
     return json.dumps({"env": "dev", "pages": out})

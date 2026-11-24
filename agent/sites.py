@@ -11,7 +11,7 @@ import urllib.request
 from pathlib import Path
 
 ENVS = {"dev": 18081, "prod": 18082}
-PHP_TAGS = {"8.1": "6-php8.1-apache", "8.2": "6-php8.2-apache", "8.3": "6-php8.3-apache"}
+PHP_TAGS = {"7.4": "6-php7.4-apache", "8.1": "6-php8.1-apache", "8.2": "6-php8.2-apache", "8.3": "6-php8.3-apache"}
 COMPOSE_DIR = Path(__file__).resolve().parent.parent / "env"
 
 
@@ -27,13 +27,21 @@ def shell(env: str, command: str) -> str:
 
 
 def wp(env: str, args: list[str]) -> str:
-    """Run wp-cli against the site."""
+    """Run wp-cli against the site. Plugins and themes are not loaded (--skip-plugins --skip-themes), so wp-cli
+    keeps working on a site that a broken plugin has taken down — as an operator would run it."""
     return _sh([
         "podman", "run", "--rm", "--network", "ayr_default", "--volumes-from", f"ayr_{env}-wp_1",
         "--user", "33:33", "-e", f"WORDPRESS_DB_HOST={env}-db", "-e", "WORDPRESS_DB_USER=wp",
         "-e", "WORDPRESS_DB_PASSWORD=wp", "-e", "WORDPRESS_DB_NAME=wp",
-        "docker.io/library/wordpress:cli", "wp", *args,
+        "docker.io/library/wordpress:cli", "wp", "--skip-plugins", "--skip-themes", *args,
     ])
+
+
+def activate_without_loading(env: str, plugin_file: str) -> str:
+    """Mark a plugin active without running it (an old plugin may not even load under wp-cli's PHP)."""
+    code = (f"$a = get_option('active_plugins', []); if (!in_array('{plugin_file}', $a)) {{ $a[] = '{plugin_file}'; "
+            f"update_option('active_plugins', $a); }} echo 'active';")
+    return wp(env, ["eval", code])
 
 
 def php_version(env: str) -> str:
@@ -78,3 +86,10 @@ def fetch(env: str, path: str = "/") -> tuple[int, str]:
     text = re.sub(r"<script.*?</script>|<style.*?</style>", " ", body, flags=re.S)
     text = html.unescape(re.sub(r"<[^>]+>", " ", text))
     return status, re.sub(r"\s+", " ", text).strip()
+
+
+def last_php_fatal(env: str, since: str = "10m") -> str:
+    """The newest 'PHP Fatal error' line from the web container's log (PHP logs to stderr in this image)."""
+    out = _sh(["podman", "logs", "--since", since, f"ayr_{env}-wp_1"])
+    fatals = [line for line in out.splitlines() if "PHP Fatal error" in line]
+    return fatals[-1] if fatals else ""

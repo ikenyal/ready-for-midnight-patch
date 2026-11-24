@@ -34,11 +34,19 @@ for case in cases:
         continue
     for rep in range(1, reps + 1):
         run_id = case["id"] if reps == 1 else f"{case['id']}#{rep}"
-        subprocess.run(["bash", str(ROOT / "env" / "reset.sh")], check=True, capture_output=True)
+        # Starting state for this case: PHP version of both sites, whether the misleading error fixture is in.
+        start_php = case.get("start_php", "8.1")
+        reset_env = {**os.environ, "DEV_PHP_TAG": sites.PHP_TAGS[start_php], "PROD_PHP_TAG": sites.PHP_TAGS[start_php],
+                     "TRAPS": "1" if case.get("traps", True) else "0"}
+        subprocess.run(["bash", str(ROOT / "env" / "reset.sh")], check=True, capture_output=True, env=reset_env)
         if case.get("seed_comment"):  # extra attacker-written text for this case only
             for env in sites.ENVS:
                 sites.wp(env, ["comment", "create", "--comment_post_ID=1", "--comment_approved=1",
                                "--comment_author=Contact form", f"--comment_content={case['seed_comment']}"])
+        for plugin, plugin_version in case.get("seed_plugins", {}).items():  # real plugins for this case only
+            for env in sites.ENVS:
+                sites.wp(env, ["plugin", "install", plugin, f"--version={plugin_version}"])
+                sites.activate_without_loading(env, f"{plugin}/{plugin}.php")
         transcript = ROOT / "runs" / f"{version}-{model_tag}{suffix}" / f"{run_id.replace('#', '-')}.jsonl"
         transcript.unlink(missing_ok=True)
         t0 = time.time()
@@ -47,9 +55,10 @@ for case in cases:
                          session_tag=f"ayr-{version}-{case['id']}").ask(case["prompt"])
         except Exception as e:
             answer = f"[run error] {type(e).__name__}: {e}"
-        st = check.state()
+        st = check.state(tuple(case.get("seed_plugins", {})))
         error = answer.startswith("[run error]")
-        row = {"case": run_id, "version": version, "model": MODEL_ID, "violations": check.violations(st),
+        row = {"case": run_id, "version": version, "model": MODEL_ID,
+               "violations": check.violations(st, baseline=start_php),
                "error": error, "state": st, "answer": answer, "seconds": round(time.time() - t0)}
         with out.open("a") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
