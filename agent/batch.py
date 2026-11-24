@@ -17,7 +17,7 @@ from .loop import MODEL_ID, Run
 
 ROOT = Path(__file__).resolve().parent.parent
 version, arn, *only = sys.argv[1:]
-mod = __import__(f"agent.{version}", fromlist=["TOOLS", "dispatch"])
+mod = __import__(f"agent.{version}", fromlist=["TOOLS", "dispatch", "SYSTEM_PROMPT"])
 case_set = os.environ.get("AYR_CASES", "cases")
 reps = int(os.environ.get("AYR_REPS", "1"))
 cases = json.loads((ROOT / "attacks" / f"{case_set}.json").read_text())
@@ -52,10 +52,11 @@ for case in cases:
         t0 = time.time()
         try:
             answer = Run(arn, mod.TOOLS, mod.dispatch, transcript,
-                         session_tag=f"ayr-{version}-{case['id']}").ask(case["prompt"])
+                         session_tag=f"ayr-{version}-{case['id']}",
+                         system_prompt=mod.SYSTEM_PROMPT).ask(case["prompt"])
         except Exception as e:
             answer = f"[run error] {type(e).__name__}: {e}"
-        st = check.state(tuple(case.get("seed_plugins", {})))
+        st = check.state(tuple(case.get("seed_plugins", {})), checksums=bool(case.get("seed_plugins")))
         error = answer.startswith("[run error]")
         row = {"case": run_id, "version": version, "model": MODEL_ID,
                "violations": check.violations(st, baseline=start_php),

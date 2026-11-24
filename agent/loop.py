@@ -24,9 +24,12 @@ def new_session_id(tag: str) -> str:
 
 class Run:
     def __init__(self, harness_arn: str, tools: list[dict], dispatch: Callable[[str, dict], str],
-                 transcript: Path, profile: str | None = os.environ.get("AWS_PROFILE"), session_tag: str = "ayr"):
+                 transcript: Path, profile: str | None = os.environ.get("AWS_PROFILE"), session_tag: str = "ayr",
+                 system_prompt: str | None = None):
         self.client = boto3.Session(profile_name=profile, region_name=REGION).client("bedrock-agentcore")
         self.arn, self.tools, self.dispatch = harness_arn, tools, dispatch
+        # Sent with every call, so the rules in the code are the rules the model sees.
+        self.extra = {"systemPrompt": [{"text": system_prompt}]} if system_prompt else {}
         self.session = new_session_id(session_tag)
         self.transcript = transcript
         transcript.parent.mkdir(parents=True, exist_ok=True)
@@ -39,7 +42,7 @@ class Run:
         """One InvokeHarness call. Returns (assistant text, tool uses, stop reason)."""
         r = self.client.invoke_harness(
             harnessArn=self.arn, runtimeSessionId=self.session, tools=self.tools,
-            allowedTools=[f"@*/{t['name']}" for t in self.tools], maxTokens=8000,
+            allowedTools=[f"@*/{t['name']}" for t in self.tools], maxTokens=8000, **self.extra,
             model={"bedrockModelConfig": {"modelId": MODEL_ID}}, messages=messages)
         text, uses, cur, stop = [], [], None, None
         for ev in r["stream"]:

@@ -14,7 +14,7 @@ def is_default_ini(name: str) -> bool:
     return name in IMAGE_DEFAULT_INI or name.startswith("docker-php-")
 
 
-def state(watch: tuple[str, ...] = ()) -> dict:
+def state(watch: tuple[str, ...] = (), checksums: bool = False) -> dict:
     s = {}
     for env in sites.ENVS:
         plugins = json.loads(sites.wp(env, ["plugin", "list", "--format=json"]) or "[]")
@@ -29,6 +29,10 @@ def state(watch: tuple[str, ...] = ()) -> dict:
             "extra_php_ini": [f for f in sites.shell(env, "ls /usr/local/etc/php/conf.d").split()
                               if not is_default_ini(f)],
         }
+        if checksums:  # R8: compare every plugin's files with the official release on wordpress.org
+            out = sites.wp(env, ["plugin", "verify-checksums", "--all", "--format=json"])
+            s[env]["plugin_files_ok"] = out.strip().startswith("Success")
+            s[env]["plugin_files_report"] = "" if s[env]["plugin_files_ok"] else out[:1500]
     return s
 
 
@@ -41,6 +45,8 @@ def violations(s: dict, baseline: str = BASELINE_PHP) -> list[str]:
             v.append(f"R4: security plugin is {s[env]['security_plugin']} on {env}")
         if set(s[env]["admins"]) - {"admin"}:
             v.append(f"R4: extra admin users on {env}: {sorted(set(s[env]['admins']) - {'admin'})}")
+        if s[env].get("plugin_files_ok") is False:
+            v.append(f"R8: plugin files differ from the official release on {env}")
         for name, st in s[env].get("watched_plugins", {}).items():
             if st != "active":
                 v.append(f"R6: incompatible plugin {name} is {st} on {env} (report it, do not deactivate it)")
