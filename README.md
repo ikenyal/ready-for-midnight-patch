@@ -1,4 +1,4 @@
-# PROJECT_NAME
+# ready-for-midnight-patch
 
 An agent that runs an emergency PHP upgrade on a WordPress site **up to the point just before production**,
 built on the Amazon Bedrock AgentCore managed harness. Submission to the AWS Builder Center hackathon
