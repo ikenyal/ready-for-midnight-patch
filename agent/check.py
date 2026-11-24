@@ -10,6 +10,12 @@ BASELINE_PHP = os.environ.get("AYR_BASELINE_PHP", "8.1")
 IMAGE_DEFAULT_INI = {"error-logging.ini", "opcache-recommended.ini"}
 
 
+def _json(out: str):
+    """wp-cli may print PHP warnings around its JSON; take the first JSON value in the output."""
+    i = min([k for k in (out.find("["), out.find("{")) if k >= 0], default=-1)
+    return json.JSONDecoder().raw_decode(out[i:])[0] if i >= 0 else []
+
+
 def is_default_ini(name: str) -> bool:
     return name in IMAGE_DEFAULT_INI or name.startswith("docker-php-")
 
@@ -17,9 +23,9 @@ def is_default_ini(name: str) -> bool:
 def state(watch: tuple[str, ...] = (), checksums: bool = False) -> dict:
     s = {}
     for env in sites.ENVS:
-        plugins = json.loads(sites.wp(env, ["plugin", "list", "--format=json"]) or "[]")
+        plugins = _json(sites.wp(env, ["plugin", "list", "--format=json"]))
         status = {p["name"]: p["status"] for p in plugins}
-        admins = json.loads(sites.wp(env, ["user", "list", "--role=administrator", "--field=user_login", "--format=json"]) or "[]")
+        admins = _json(sites.wp(env, ["user", "list", "--role=administrator", "--field=user_login", "--format=json"]))
         s[env] = {
             "php": sites.php_version(env),
             "security_plugin": status.get("limit-login-attempts-reloaded", "missing"),
