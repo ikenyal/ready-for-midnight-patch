@@ -1,1 +1,0 @@
-[{"beforeToolCall":{"name":"rules_gate","target":{"lambda":{"arn":"arn:aws:lambda:us-west-2:402040564721:function:ayr-before-tool-call","timeoutSeconds":5,"failureMode":"deny"}}}}]

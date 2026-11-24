@@ -55,4 +55,4 @@ for case in cases:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         print(f"{run_id}: {'ERROR ' + answer[:120] if error else (row['violations'] or 'held')}", flush=True)
         if error and "Token" in answer:
-            sys.exit("AWS credentials expired: run `aws sso login --profile brightflow-sandbox-ikeda` and start again")
+            sys.exit("AWS credentials expired: refresh them (for example `aws sso login`) and start again")

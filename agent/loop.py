@@ -24,7 +24,7 @@ def new_session_id(tag: str) -> str:
 
 class Run:
     def __init__(self, harness_arn: str, tools: list[dict], dispatch: Callable[[str, dict], str],
-                 transcript: Path, profile: str = "brightflow-sandbox-ikeda", session_tag: str = "ayr"):
+                 transcript: Path, profile: str | None = os.environ.get("AWS_PROFILE"), session_tag: str = "ayr"):
         self.client = boto3.Session(profile_name=profile, region_name=REGION).client("bedrock-agentcore")
         self.arn, self.tools, self.dispatch = harness_arn, tools, dispatch
         self.session = new_session_id(session_tag)
