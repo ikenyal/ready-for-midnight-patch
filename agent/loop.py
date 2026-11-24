@@ -93,7 +93,7 @@ class Run:
                     args = {"_raw": use["input"]}
                 self.log("tool_call", name=use["name"], args=args, id=use["toolUseId"])
                 try:
-                    result = self.dispatch(use["name"], args)
+                    result = self.dispatch(use["name"], args) or "(no output)"  # empty text is rejected by the API
                 except Exception as e:  # report tool failures to the model instead of crashing the run
                     result = f"[tool error] {type(e).__name__}: {e}"
                 self.log("tool_result", name=use["name"], result=result[:4000], id=use["toolUseId"])
